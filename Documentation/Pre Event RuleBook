@@ -1,0 +1,152 @@
+THE MASTER RUNBOOK: OPERATION "ARMY OF DARKNESS"
+⚠️ Universal Rules of Engagement
+
+Zero-Hour: Do not access the environment before the competition has started.
+
+Boundary Limits: The router is out of scope for the Red and Blue team. VIOLATORS WILL BE DISQUALIFIED!.
+
+Tooling: No paid tools!!. Rely on Sysinternals and native Windows binaries.
+
+The Penalty: A snapshot revert of a machine at the cost of 500 points. Only use this if the box is completely destroyed.
+
+The Scoring: Each service check is worth 5 points per service and will be checked every minute. HOWEVER, after 5 consecutive failed service checks, teams will lose 5 points per check for that service.
++1
+
+🔴 RUNBOOK 1: Target Alpha - City Wok DC 🔴
+Role: Domain Controller | IP Address: 192.168.1.111 | Scored Service: Wordpress (Port 80) 
+
+Phase 1: Zero-Hour Ghost Deployment (12:00 PM)
+
+Action: Create a camouflaged Domain Admin backdoor.
+
+PowerShell
+net user wsappx_svc "Th1sIsM0yB@ckup2026!" /add /fullname:"Windows Store Service (WSSvc)" /comment:"Provides infrastructure support for the Microsoft Store."
+net group "Domain Admins" wsappx_svc /add
+REVERSAL: net group "Domain Admins" wsappx_svc /delete followed by net user wsappx_svc /delete
+
+Phase 2: Stealth Backups (12:03 PM)
+
+Action: Backup the Firewall to the Prefetch folder.
+
+PowerShell
+netsh advfirewall export "C:\Windows\Prefetch\net_qos_cache.wfw"
+REVERSAL: netsh advfirewall import "C:\Windows\Prefetch\net_qos_cache.wfw"
+
+Action: Backup the WordPress Site (assuming C:\inetpub\wwwroot).
+
+PowerShell
+Copy-Item -Path "C:\inetpub\wwwroot" -Destination "C:\Windows\Prefetch\W3SVC_Telemetry_Cache" -Recurse
+REVERSAL:
+
+PowerShell
+Remove-Item -Path "C:\inetpub\wwwroot\*" -Recurse -Force
+Copy-Item -Path "C:\Windows\Prefetch\W3SVC_Telemetry_Cache\*" -Destination "C:\inetpub\wwwroot" -Recurse -Force
+Phase 3: The Quotient Pivot (12:07 PM)
+
+Action: Change the primary Administrator password via Ctrl + Alt + Del and visit http://172.16.215.250/. Submit a Password Change Request (PCR) using the following format: Userl, password.
++1
+
+REVERSAL: If the scoring engine rejects it, immediately change the password again to something without special characters and resubmit the PCR.
+
+Phase 4: Active Hardening & Application Defense (12:12 PM Onward)
+
+Action: Disable WP Theme Editor by adding define( 'DISALLOW_FILE_EDIT', true ); to the bottom of wp-config.php.
+
+REVERSAL: Open wp-config.php and delete that line.
+
+Action: Rename xmlrpc.php to prevent brute forcing.
+
+PowerShell
+Rename-Item -Path "C:\inetpub\wwwroot\xmlrpc.php" -NewName "xmlrpc.php.bak"
+REVERSAL: Rename-Item -Path "C:\inetpub\wwwroot\xmlrpc.php.bak" -NewName "xmlrpc.php"
+
+Action: Disable suspicious Inbound Firewall Rules via wf.msc GUI.
+
+REVERSAL: Open wf.msc, click Inbound Rules, right-click the greyed-out rule, and select Enable Rule.
+
+Action: Audit "Sticky Keys" vulnerability. Navigate to C:\Windows\System32. Check properties of sethc.exe and utilman.exe. If the original filename is cmd.exe, the Red Team has backdoored your RDP login screen.
+
+REVERSAL: Disable inbound RDP access in wf.msc to sever their access to the Sticky Keys prompt.
+
+🔵 RUNBOOK 2: Target Bravo - City Sushi FS 🔵
+Role: File Server | IP Address: 192.168.1.12 | Scored Service: FTP (Ports 20/21) 
+
+Phase 1: Zero-Hour Ghost Deployment & Anti-Pivot (12:00 PM)
+
+Action: Create a camouflaged Local Admin backdoor.
+
+PowerShell
+net user wsappx_svc "Th1sIsM0yB@ckup2026!" /add /fullname:"Windows Store Service (WSSvc)" /comment:"Provides infrastructure support for the Microsoft Store."
+net localgroup administrators wsappx_svc /add
+REVERSAL: net localgroup administrators wsappx_svc /delete followed by net user wsappx_svc /delete
+
+Action: The Anti-Pivot Block (Stops the DC from executing commands on the File Server to prevent Pass-the-Hash).
+
+PowerShell
+New-NetFirewallRule -DisplayName "RvB-Block-Lateral-Movement" -Direction Inbound -Action Block -Protocol TCP -LocalPort 445,139,5985,5986,3389 -RemoteAddress 192.168.1.111
+REVERSAL: Remove-NetFirewallRule -DisplayName "RvB-Block-Lateral-Movement"
+
+Phase 2: Stealth Backups (12:05 PM)
+
+Action: Backup the Firewall.
+
+PowerShell
+netsh advfirewall export "C:\Windows\Prefetch\dfs_repl_cache.wfw"
+REVERSAL: netsh advfirewall import "C:\Windows\Prefetch\dfs_repl_cache.wfw"
+
+Action: Backup the FTP Directory.
+
+PowerShell
+Copy-Item -Path "C:\inetpub\ftproot" -Destination "C:\Windows\Prefetch\vss_shadow_cache" -Recurse
+REVERSAL: ```powershell
+Remove-Item -Path "C:\inetpub\ftproot*" -Recurse -Force
+Copy-Item -Path "C:\Windows\Prefetch\vss_shadow_cache*" -Destination "C:\inetpub\ftproot" -Recurse -Force
+
+
+### Phase 3: The Quotient Pivot (12:09 PM)
+**Action:** Change the `Administrator` password via `Ctrl + Alt + Del` and submit the PCR using format `Userl, password`[cite: 58]. 
+* **REVERSAL:** Change the password again and resubmit the PCR instantly.
+
+### Phase 4: Active Hardening & Application Defense (12:14 PM Onward)
+
+**Action:** Disable Anonymous FTP & Enable Basic Authentication via IIS Manager. 
+* **REVERSAL:** Open IIS Manager -> FTP Authentication. Enable Anonymous and Disable Basic.
+
+**Action:** Set FTP User Isolation to "User directory" in IIS Manager. 
+* **REVERSAL:** Open IIS Manager -> FTP User Isolation. Revert to "Do not isolate users. Start users in: FTP root directory".
+
+**Action:** Restrict NTFS Permissions on `C:\inetpub\ftproot`. Right-click folder -> Properties -> Security -> Edit. Ensure `Users` group only has "Read & execute".
+* **REVERSAL:** Check the Allow box next to Write or Full control for the `Users` group.
+
+---
+
+## ⏱️ RUNBOOK 3: THE 20-MINUTE PULSE CHECK LOOP
+*Execute this cycle continuously from 12:30 PM to 4:30 PM on BOTH machines to ensure persistent uptime.*
+
+#### 1. The Scoreboard Triage (Minute 0-2)
+Because the scoreboard IP address rotates, so blocking everything except the scoreboard would be invalid[cite: 61]. Keep your L7 services open. Look at Quotient.
+* **If Red:** Check the Debug information provided through the scoreboard[cite: 60]. "Connection Refused" = Firewall is blocking Port 80/20/21. "Auth Failed" = Submit a new PCR.
+
+#### 2. The Identity Audit (Minute 2-5)
+* **City Wok DC:** Open `dsa.msc` (Active Directory). Check the **Domain Admins** group. Delete any unauthorized users.
+* **City Sushi FS:** Open `lusrmgr.msc` (Local Users). Check the **Administrators** group. Delete unauthorized users.
+
+#### 3. The Network & Process Hunt (Minute 5-10)
+
+* Open Sysinternals **TCPView**. 
+* Sort by the **"State"** column to find `ESTABLISHED` connections.
+* If `cmd.exe`, `powershell.exe`, or a hidden file is beaconing to an external IP on a random port, right-click -> **Close Connection**, then locate and terminate the parent process.
+
+#### 4. The Application Integrity Check (Minute 10-15)
+* **City Wok DC:** Open `C:\inetpub\wwwroot`. Sort by **Date Modified**. If a new `.php` file appeared (webshell), delete it and restore from `Prefetch`.
+* **City Sushi FS:** Open `C:\inetpub\ftproot`. Ensure "Show hidden files" is on. Delete any unrecognized `.exe` or `.bat` payloads dropped by the Red Team.
+
+#### 5. The Firewall Audit (Minute 15-20)
+* Open Windows Defender Firewall (`wf.msc`). Click **Inbound Rules** and sort by the **Enabled** column.
+* Look for newly created "Allow" rules designed to let the Red Team back in. Right-click and select **Disable Rule**. 
+
+***
+
+You are locked, loaded, and your contingencies have contingencies. Copy your scripts to Pastebin [cite: 22] so you are ready to drop them in the moment the clock strikes 12. 
+
+Good hunting. Do you need anything else before you step onto the battlefield?
