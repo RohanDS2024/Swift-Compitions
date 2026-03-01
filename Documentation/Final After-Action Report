@@ -1,0 +1,48 @@
+Engagement Summary
+Duration: 12:00 PM – 4:30 PM PST (3:00 PM – 7:30 PM EST).
+
+Primary Assets: City Wok Domain Controller and City Sushi File Server.
+
+Status: Active defense. Major initial persistence mechanisms were neutralized, and "Default Deny" firewall posture was established.
+
+1. Identity & Access Management (IAM)
+You identified and neutralized unauthorized accounts while establishing emergency recovery access.
+
+Rogue Account Neutralization: You identified a suspicious domain account named butter sitting adjacent to the legitimate butters account in Active Directory.
+
+Account Lockdown: After initial attempts to disable butter locally, you executed a domain-wide lockout using net user butter /active:no /domain to ensure it could not be used for lateral movement.
+
+Guest Account Security: You successfully disabled the built-in Windows Guest account on both servers to prevent anonymous environment enumeration.
+
+Ghost Account Deployment: You established a "Hidden" administrative backdoor account named wsappx_svc (spoofing the Windows Store Service) with a high-entropy password to maintain access if the primary Administrator account is compromised.
+
+2. Network Hardening (Firewall & Services)
+You transitioned the servers from a "Wide Open" default state to a "Least Privilege" communication model.
+
+Default Deny Strategy: You exported a pristine configuration backup (net_qos_cache.wfw) before aggressively pruning Microsoft default rules.
+
+Scored Service Protection: You created explicit "Allow" rules for Port 80 (HTTP) to keep the WordPress site green on the Quotient scoreboard.
+
+Infrastructure Survival: You explicitly allowed critical Active Directory ports (DNS, Kerberos, LDAP, SMB, RPC) to prevent domain collapse.
+
+Lateral Movement Block: You implemented a "Guillotine" rule on the File Server to block all management and RPC traffic originating from the Domain Controller, effectively preventing the Red Team from pivoting between boxes.
+
+Anonymous Access Kill: You disabled Anonymous Authentication in IIS for the FTP service and enabled "Do not allow anonymous enumeration of SAM accounts" in Local Security Policy.
+
+3. Threat Hunting & Persistence Cleanup
+You utilized specialized tools to find and remove Red Team footprints.
+
+Sysinternals Deployment: You bypassed outbound SMB blocks by using Invoke-WebRequest to pull TCPView and Process Explorer directly from Microsoft’s live servers.
+
+Task Scheduler Audit: You investigated a suspicious CreateExplorerShellUnelevatedTask and verified it was a native Windows process, avoiding a "Friendly Fire" disruption of the OS.
+
+Network Surveillance: You performed a live audit of established connections in TCPView, identifying that lsass.exe traffic on Port 389 was legitimate local LDAP traffic rather than a data exfiltration beacon.
+
+Anti-Forensics: You wiped the PowerShell PSReadLine history files on both servers to prevent the Red Team from seeing the specific hardening commands and passwords you utilized.
+
+4. Incident Response (IR) Findings
+Historical Brute Force: You identified a prior brute-force attack against the account kyle originating from IP 172.16.216.116.
+
+Real-Time Monitoring: You established a 10-minute rolling audit of Event ID 4625 (Failed Logins) and Event ID 4624 (Successful Logins) to detect active intrusions.
+
+Next Step: Would you like me to generate a Hardening Checklist for the final 90 minutes of the competition to ensure no new persistence is dropped?
